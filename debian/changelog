@@ -1,3 +1,10 @@
+qsnapshot (0.1.0-1ubuntu3) oneiric; urgency=low
+
+  * Remove gcc feature hack.
+  * Add libx11-dev to build dependency.
+
+ -- Wei Cheng Pan <legnaleurc@gmail.com>  Thu, 26 Apr 2012 13:47:18 +0800
+
 qsnapshot (0.1.0-1ubuntu2) natty; urgency=low
 
   * Remove Qt version hack.
