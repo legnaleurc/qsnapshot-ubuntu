@@ -1,0 +1,3 @@
+?package(qsnapshot):needs="X11" section="Applications/Graphics"\
+  title="QSnapshot" command="/usr/bin/QSnapshot"\
+  icon="/usr/share/pixmaps/qsnapshot.png"
