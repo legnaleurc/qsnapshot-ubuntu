@@ -1,3 +1,9 @@
+qsnapshot (0.1.0-1ubuntu3precise1) precise; urgency=low
+
+  * Upload to precise, no change needed.
+
+ -- Wei Cheng Pan <legnaleurc@gmail.com>  Thu, 26 Apr 2012 14:23:15 +0800
+
 qsnapshot (0.1.0-1ubuntu3) oneiric; urgency=low
 
   * Remove gcc feature hack.
