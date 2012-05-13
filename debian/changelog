@@ -1,3 +1,11 @@
+qsnapshot (0.1.1-1ubuntu1) precise; urgency=low
+
+  * Imported Upstream version 0.1.1
+  * Add libxext-dev to build dependency
+  * Remove disable-bundle.patch
+
+ -- Wei Cheng Pan <legnaleurc@gmail.com>  Sun, 13 May 2012 15:28:51 +0000
+
 qsnapshot (0.1.0-1ubuntu3precise1) precise; urgency=low
 
   * Upload to precise, no change needed.
