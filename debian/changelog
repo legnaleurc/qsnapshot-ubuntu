@@ -1,3 +1,10 @@
+qsnapshot (0.1.1-1ubuntu1natty1) natty; urgency=low
+
+  * Backport from precise
+  * Update hack-gcc44-feature.patch
+
+ -- Wei Cheng Pan <legnaleurc@gmail.com>  Sun, 13 May 2012 16:26:41 +0000
+
 qsnapshot (0.1.1-1ubuntu1) precise; urgency=low
 
   * Imported Upstream version 0.1.1
