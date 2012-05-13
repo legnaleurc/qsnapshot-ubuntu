@@ -17,17 +17,15 @@
 
 cmake_minimum_required(VERSION 2.6)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
+
 project(QSnapshot)
 set(QSNAPSHOT_VERSION_MAJOR "0")
 set(QSNAPSHOT_VERSION_MINOR "1")
-set(QSNAPSHOT_VERSION_PATCH "0")
+set(QSNAPSHOT_VERSION_PATCH "1")
 set(QSNAPSHOT_VERSION "${QSNAPSHOT_VERSION_MAJOR}.${QSNAPSHOT_VERSION_MINOR}.${QSNAPSHOT_VERSION_PATCH}")
 
-configure_file("qsnapshot_config.h.in" "qsnapshot_config.h")
-
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
-
-find_package(Qt4 4.7 REQUIRED)
+find_package(Qt4 4.6 REQUIRED)
 if(UNIX AND NOT APPLE)
     find_package(X11 REQUIRED)
 endif()
@@ -37,9 +35,14 @@ set(HAVE_X11_EXTENSIONS_SHAPE_H ${X11_Xshape_FOUND})
 set(HAVE_X11_EXTENSIONS_XFIXES_H ${X11_Xfixes_FOUND})
 include(InstallRequiredSystemLibraries)
 
+configure_file("${CMAKE_SOURCE_DIR}/cmake/modules/qsnapshot_config.h.in" "qsnapshot_config.h")
+
 set(CMAKE_DEBUG_POSTFIX d)
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -pedantic -Wextra -Wall -pipe")
+elseif(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:wchar_t-")
+    add_definitions(/D_UNICODE)
 endif()
 
 # hack MSVC path
@@ -63,8 +66,16 @@ if(APPLE)
         MACOSX_PACKAGE_LOCATION Resources)
 elseif(UNIX)
     file(GLOB_RECURSE QSNAPSHOT_PLATFORM_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} x11/*.cpp)
+    file(GLOB_RECURSE QSNAPSHOT_PLATFORM_HEADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} x11/*.hpp)
 elseif(WIN32)
     file(GLOB_RECURSE QSNAPSHOT_PLATFORM_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} windows/*.cpp)
+    file(GLOB_RECURSE QSNAPSHOT_PLATFORM_HEADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} windows/*.hpp)
+endif()
+if(UNIX)
+    file(GLOB_RECURSE tmp RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "unix/*.cpp")
+    set(QSNAPSHOT_PLATFORM_SOURCES ${QSNAPSHOT_PLATFORM_SOURCES} ${tmp})
+    file(GLOB_RECURSE tmp RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "unix/*.hpp")
+    set(QSNAPSHOT_PLATFORM_HEADERS ${QSNAPSHOT_PLATFORM_HEADERS} ${tmp})
 endif()
 
 include_directories(
@@ -85,9 +96,9 @@ qt4_add_resources(QSNAPSHOT_RCC_SOURCES "qsnapshot.qrc")
 
 source_group("Generated Files" FILES ${QSNAPSHOT_MOC_SOURCES} ${QSNAPSHOT_RCC_SOURCES} ${QSNAPSHOT_UIC_HEADERS})
 source_group("Resource Files" REGULAR_EXPRESSION .*\\.rc)
-source_group("Form Files" REGULAR_EXPRESSION .*\\.ui)
+source_group("Form Files" FILES ${QSNAPSHOT_FORMS})
 
-set(QSNAPSHOT_COMPILE_UNITS ${QSNAPSHOT_HEADERS} ${QSNAPSHOT_SOURCES} ${QSNAPSHOT_PLATFORM_SOURCES} ${QSNAPSHOT_MOC_SOURCES} ${QSNAPSHOT_UIC_HEADERS} ${QSNAPSHOT_RCC_SOURCES})
+set(QSNAPSHOT_COMPILE_UNITS ${QSNAPSHOT_HEADERS} ${QSNAPSHOT_SOURCES} ${QSNAPSHOT_PLATFORM_SOURCES} ${QSNAPSHOT_PLATFORM_HEADERS} ${QSNAPSHOT_MOC_SOURCES} ${QSNAPSHOT_UIC_HEADERS} ${QSNAPSHOT_RCC_SOURCES})
 set(QSNAPSHOT_LINKING_UNITS ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
 
 if(MSVC)
@@ -114,7 +125,10 @@ set_target_properties(QSnapshot PROPERTIES VERSION ${QSNAPSHOT_VERSION})
 install(TARGETS QSnapshot
     RUNTIME DESTINATION "bin" COMPONENT Runtime
     BUNDLE DESTINATION "." COMPONENT Runtime)
-install(SCRIPT "install.cmake" COMPONENT Runtime)
+if(APPLE OR WIN32)
+    configure_file("${CMAKE_SOURCE_DIR}/cmake/modules/install.cmake.in" "${CMAKE_BINARY_DIR}/install.cmake" @ONLY)
+    install(SCRIPT "${CMAKE_BINARY_DIR}/install.cmake" COMPONENT Runtime)
+endif()
 
 # package part
 set(CPACK_PACKAGE_VERSION_MAJOR ${QSNAPSHOT_VERSION_MAJOR})

@@ -16,39 +16,13 @@
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef QSNAPSHOT_WIDGET_REGIONGRABBER_HPP
-#define QSNAPSHOT_WIDGET_REGIONGRABBER_HPP
+#define QSNAPSHOT_VERSION_MAJOR ${QSNAPSHOT_VERSION_MAJOR}
+#define QSNAPSHOT_VERSION_MINOR ${QSNAPSHOT_VERSION_MINOR}
+#define QSNAPSHOT_VERSION_PATCH ${QSNAPSHOT_VERSION_PATCH}
+#define QSNAPSHOT_VERSION ${QSNAPSHOT_VERSION}
 
-#include "abstractgrabber.hpp"
+#cmakedefine01 HAVE_X11_EXTENSIONS_SHAPE_H
+#cmakedefine01 HAVE_X11_EXTENSIONS_XFIXES_H
 
-namespace qsnapshot {
-	namespace widget {
-
-		class RegionGrabber : public AbstractGrabber {
-			Q_OBJECT
-		public:
-			RegionGrabber();
-
-			void grab();
-
-		protected:
-			virtual void paintEvent( QPaintEvent * event );
-			virtual void resizeEvent( QResizeEvent * event );
-			virtual void mousePressEvent( QMouseEvent * event );
-			virtual void mouseMoveEvent( QMouseEvent * event );
-			virtual void mouseReleaseEvent( QMouseEvent * event );
-			virtual void mouseDoubleClickEvent( QMouseEvent * event );
-			virtual void keyPressEvent( QKeyEvent * event );
-
-		signals:
-			void regionGrabbed( const QPixmap & pixmap );
-
-		private:
-			class Private;
-			Private * p_;
-		};
-
-	}
-}
-
-#endif
+#define QSNAPSHOT_STRINGIZER_(x) #x
+#define QSNAPSHOT_STRINGIZER(x) QSNAPSHOT_STRINGIZER_(x)

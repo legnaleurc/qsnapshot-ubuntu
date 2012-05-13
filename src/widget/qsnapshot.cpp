@@ -17,20 +17,37 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include "qsnapshotprivate.hpp"
+#include "savingdialog.hpp"
 
-#include <QtGui/QDesktopWidget>
 #include <QtCore/QTimer>
+#include <QtGui/QDesktopWidget>
+#include <QtGui/QMessageBox>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QFileDialog>
 #include <QtGui/QClipboard>
 
-#include <QtCore/QtDebug>
-
 namespace {
-const int ChildWindow = 3;
-const int WindowUnderCursor = 1;
-const int CurrentScreen = 0;
-const int Region_ = 2;
+
+	const int ChildWindow = 3;
+	const int WindowUnderCursor = 1;
+	const int CurrentScreen = 0;
+	const int Region_ = 2;
+
+	void delayGUI( int msec ) {
+		QEventLoop wait;
+		QTimer::singleShot( msec, &wait, SLOT( quit() ) );
+		wait.exec();
+	}
+
+}
+
+namespace i18n {
+
+	const QString DELAY_SUFFIX = QObject::tr( " second(s)", "" );
+	const QString REGION_TIP = QObject::tr( "Preview of the snapshot image (%1 x %2)" );
+	const QString HELP_TITLE = QObject::tr( "About QSnapshot" );
+	const QString VERSION = QObject::tr( "Version" );
+
 }
 
 using namespace qsnapshot::widget;
@@ -39,39 +56,18 @@ QSnapshot::Private::Private( QSnapshot * host ):
 QObject( host ),
 host( host ),
 ui(),
+strategy( Strategy::createInstance( host ) ),
 // NOTE Windows and Mac OS X flag
-grabber( new QWidget( 0, Qt::X11BypassWindowManagerHint | Qt::FramelessWindowHint ) ),
+grabber( new FocusGrabber ),
 grabTimer( new SnapshotTimer( host ) ),
-regionGrabber( new RegionGrabber( this->host ) ),
+regionGrabber( new RegionGrabber ),
 windowGrabber( new WindowGrabber( 0 ) ),
 snapshot(),
 savedPosition(),
 modified( false ) {
 	this->ui.setupUi( host );
 
-	this->ui.snapshotDelay->setSuffix( QObject::tr( " second(s)", "" ) );
-
-	this->grabber->move( 0, 0 );
-	this->grabber->setWindowOpacity( 0.1 );
-	this->grabber->resize( QApplication::desktop()->screenGeometry().size() );
-	QPalette p = this->grabber->palette();
-	p.setBrush( this->grabber->backgroundRole(), QColor( 0, 0, 0 ) );
-	this->grabber->setPalette( p );
-
-#ifdef HAVE_X11_EXTENSIONS_XFIXES_H
-	{
-		int tmp1, tmp2;
-		//Check whether the XFixes extension is available
-		Display *dpy = QX11Info::display();
-		if (!XFixesQueryExtension( dpy, &tmp1, &tmp2 )) {
-			mainWidget->cbIncludePointer->hide();
-			mainWidget->lblIncludePointer->hide();
-		}
-	}
-#elif !defined(Q_WS_WIN)
-//	this->ui.cbIncludePointer->hide();
-//	this->ui.lblIncludePointer->hide();
-#endif
+	this->ui.snapshotDelay->setSuffix( i18n::DELAY_SUFFIX );
 
 	if( qApp->desktop()->numScreens() < 2 ) {
 //		this->ui->comboMode->removeItem(CurrentScreen);
@@ -80,8 +76,10 @@ modified( false ) {
 	this->connect( this->ui.newSnapshot, SIGNAL( clicked() ), SLOT( grab() ) );
 	this->connect( this->ui.saveAs, SIGNAL( clicked() ), SLOT( onSaveAs() ) );
 	this->connect( this->ui.copy, SIGNAL( clicked() ), SLOT( onCopy() ) );
+	this->connect( this->ui.help, SIGNAL( clicked() ), SLOT( onHelp() ) );
+	this->connect( this->grabber.get(), SIGNAL( clicked() ), SLOT( performGrab() ) );
 	this->connect( this->grabTimer, SIGNAL( timeout() ), SLOT( startGrab() ) );
-	this->connect( this->regionGrabber, SIGNAL( regionGrabbed( const QPixmap & ) ), SLOT( onRegionGrabbed( const QPixmap & ) ) );
+	this->connect( this->regionGrabber.get(), SIGNAL( regionGrabbed( const QPixmap & ) ), SLOT( onRegionGrabbed( const QPixmap & ) ) );
 	this->connect( this->windowGrabber.get(), SIGNAL( windowGrabbed( const QPixmap & ) ), SLOT( onWindowGrabbed( const QPixmap & ) ) );
 }
 
@@ -89,10 +87,7 @@ void QSnapshot::Private::onSaveAs() {
 	if( this->snapshot.isNull() ) {
 		return;
 	}
-	QString filePath = QFileDialog::getSaveFileName( this->host, QObject::tr( "Save Captured Picture" ), QDir::currentPath(), "*.png (PNG files)" );
-	if( filePath.isEmpty() ) {
-		return;
-	}
+	QString filePath( getSaveFileName( this->host ) );
 	this->snapshot.save( filePath );
 }
 
@@ -101,9 +96,16 @@ void QSnapshot::Private::onCopy() {
 	cb->setPixmap( this->snapshot );
 }
 
+void QSnapshot::Private::onHelp() {
+	QMessageBox::information( this->host, i18n::HELP_TITLE, QString(
+		"<table>"
+			"<tr><th>%1</th><td>%2</td></tr>"
+		"</table>" ).arg( i18n::VERSION ).arg( qApp->applicationVersion() ) );
+}
+
 void QSnapshot::Private::grab() {
 	this->savedPosition = this->host->pos();
-	this->host->hide();
+	this->strategy->fastHide();
 
 	if( this->delay() > 0 ) {
 		this->grabTimer->start( this->delay() );
@@ -120,6 +122,8 @@ void QSnapshot::Private::grabRegion() {
 void QSnapshot::Private::performGrab() {
 	this->grabber->releaseMouse();
 	this->grabber->hide();
+	// NOTE this is a dirty hack, wait a little time for grabber layer really hidden
+	delayGUI( 20 );
 	this->grabTimer->stop();
 
 	// TODO command pattern
@@ -143,21 +147,8 @@ void QSnapshot::Private::performGrab() {
 //		y = geom.y();
 //		this->snapshot = QPixmap::grabWindow( desktop->winId(), x, y, geom.width(), geom.height() );
 	} else {
-		// NOTE this is a dirty hack, wait a little time for main dialog really hidden
-		QTimer hack;
-		hack.setSingleShot( true );
-		hack.setInterval( 20 );
-		QEventLoop wait;
-		wait.connect( &hack, SIGNAL( timeout() ), SLOT( quit() ) );
-		hack.start();
-		wait.exec();
 		this->snapshot = QPixmap::grabWindow( QApplication::desktop()->winId() );
 	}
-#ifdef HAVE_X11_EXTENSIONS_XFIXES_H
-	if( haveXFixes && includePointer() ) {
-		grabPointerImage(x, y);
-	}
-#endif
 
 	this->updatePreview();
 	QApplication::restoreOverrideCursor();
@@ -165,7 +156,7 @@ void QSnapshot::Private::performGrab() {
 	if( this->savedPosition != QPoint( -1, -1 ) ) {
 		this->host->move( this->savedPosition );
 	}
-	this->host->show();
+	this->strategy->fastShow();
 }
 
 void QSnapshot::Private::updatePreview() {
@@ -173,7 +164,7 @@ void QSnapshot::Private::updatePreview() {
 }
 
 void QSnapshot::Private::setPreview( const QPixmap & pixmap ) {
-	this->ui.preview->setToolTip( QObject::tr( "Preview of the snapshot image (%1 x %2)" ).arg( pixmap.width() ).arg( pixmap.height() ) );
+	this->ui.preview->setToolTip( i18n::REGION_TIP.arg( pixmap.width() ).arg( pixmap.height() ) );
 
 	this->ui.preview->setPixmap( pixmap.scaled( this->ui.preview->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation ) );
 	this->ui.preview->adjustSize();
@@ -199,7 +190,7 @@ void QSnapshot::Private::onRegionGrabbed( const QPixmap & p ) {
 	}
 
 	QApplication::restoreOverrideCursor();
-	this->host->show();
+	this->strategy->fastShow();
 }
 
 void QSnapshot::Private::onWindowGrabbed( const QPixmap & p ) {
@@ -210,10 +201,13 @@ void QSnapshot::Private::onWindowGrabbed( const QPixmap & p ) {
 	}
 
 	QApplication::restoreOverrideCursor();
-	this->host->show();
+	this->strategy->fastShow();
 }
 
 void QSnapshot::Private::startGrab() {
+	// NOTE this is a dirty hack, wait a little time for main dialog really hidden
+	delayGUI( 20 );
+
 	if( this->mode() == Region_ ) {
 		this->grabRegion();
 	} else if( this->mode() == CurrentScreen ) {
@@ -229,9 +223,6 @@ void QSnapshot::Private::startGrab() {
 QSnapshot::QSnapshot() :
 QWidget(),
 p_( new Private( this ) ) {
-	// NOTE somehow eventFilter will be triggered between
-	// new Private( this ) and p_ = new Private
-	this->p_->grabber->installEventFilter( this );
 }
 
 void QSnapshot::changeEvent( QEvent * e ) {
@@ -243,17 +234,4 @@ void QSnapshot::changeEvent( QEvent * e ) {
 	default:
 		break;
 	}
-}
-
-bool QSnapshot::eventFilter( QObject * object, QEvent * event ) {
-	if( object == this->p_->grabber.get() && event->type() == QEvent::MouseButtonPress ) {
-		QMouseEvent * me = dynamic_cast< QMouseEvent * >( event );
-		if( this->QWidget::mouseGrabber() != this->p_->grabber.get() ) {
-			return false;
-		}
-		if( me->button() == Qt::LeftButton ) {
-			this->p_->performGrab();
-		}
-	}
-	return false;
 }

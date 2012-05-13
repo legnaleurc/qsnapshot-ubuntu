@@ -1,3 +1,39 @@
+qsnapshot (0.1.1-1ubuntu1natty1) natty; urgency=low
+
+  * Backport from precise
+  * Update hack-gcc44-feature.patch
+
+ -- Wei Cheng Pan <legnaleurc@gmail.com>  Sun, 13 May 2012 16:26:41 +0000
+
+qsnapshot (0.1.1-1ubuntu1) precise; urgency=low
+
+  * Imported Upstream version 0.1.1
+  * Add libxext-dev to build dependency
+  * Remove disable-bundle.patch
+
+ -- Wei Cheng Pan <legnaleurc@gmail.com>  Sun, 13 May 2012 15:28:51 +0000
+
+qsnapshot (0.1.0-1ubuntu3precise1) precise; urgency=low
+
+  * Upload to precise, no change needed.
+
+ -- Wei Cheng Pan <legnaleurc@gmail.com>  Thu, 26 Apr 2012 14:23:15 +0800
+
+qsnapshot (0.1.0-1ubuntu3) oneiric; urgency=low
+
+  * Remove gcc feature hack.
+  * Add libx11-dev to build dependency.
+
+ -- Wei Cheng Pan <legnaleurc@gmail.com>  Thu, 26 Apr 2012 13:47:18 +0800
+
+qsnapshot (0.1.0-1ubuntu2) natty; urgency=low
+
+  * Remove Qt version hack.
+  * Change compat to 8.
+  * Bump debhelper require version.
+
+ -- Wei Cheng Pan <legnaleurc@gmail.com>  Thu, 26 Apr 2012 12:45:39 +0800
+
 qsnapshot (0.1.0-1ubuntu1) lucid; urgency=low
 
   * Initial release

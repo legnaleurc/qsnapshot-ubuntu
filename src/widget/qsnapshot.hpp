@@ -28,11 +28,12 @@ namespace qsnapshot {
 			Q_OBJECT
 
 		public:
+			class Strategy;
+
 			QSnapshot();
 
 		protected:
 			virtual void changeEvent( QEvent * event );
-			virtual bool eventFilter( QObject * object, QEvent * event );
 
 		private:
 			class Private;
