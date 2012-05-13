@@ -1,3 +1,9 @@
+qsnapshot (0.1.1-1ubuntu1oneiric1) oneiric; urgency=low
+
+  * Upload to oneiric, no change needed
+
+ -- Wei Cheng Pan <legnaleurc@gmail.com>  Sun, 13 May 2012 15:49:24 +0000
+
 qsnapshot (0.1.1-1ubuntu1) precise; urgency=low
 
   * Imported Upstream version 0.1.1
