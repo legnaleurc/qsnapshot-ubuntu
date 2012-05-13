@@ -16,39 +16,29 @@
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef QSNAPSHOT_WIDGET_REGIONGRABBER_HPP
-#define QSNAPSHOT_WIDGET_REGIONGRABBER_HPP
+#include "focusgrabber.hpp"
+#include "focusgrabberstrategy.hpp"
 
-#include "abstractgrabber.hpp"
+#include <QtGui/QApplication>
+#include <QtGui/QDesktopWidget>
+#include <QtGui/QMouseEvent>
 
-namespace qsnapshot {
-	namespace widget {
+using qsnapshot::widget::FocusGrabber;
 
-		class RegionGrabber : public AbstractGrabber {
-			Q_OBJECT
-		public:
-			RegionGrabber();
+FocusGrabber::FocusGrabber():
+QWidget( 0, Qt::X11BypassWindowManagerHint | Qt::FramelessWindowHint ),
+s_( Strategy::createInstance( this ) ) {
+	this->move( 0, 0 );
+	this->resize( QApplication::desktop()->screenGeometry().size() );
+	QPalette p = this->palette();
+	p.setBrush( this->backgroundRole(), QColor( 0, 0, 0 ) );
+	this->setPalette( p );
 
-			void grab();
-
-		protected:
-			virtual void paintEvent( QPaintEvent * event );
-			virtual void resizeEvent( QResizeEvent * event );
-			virtual void mousePressEvent( QMouseEvent * event );
-			virtual void mouseMoveEvent( QMouseEvent * event );
-			virtual void mouseReleaseEvent( QMouseEvent * event );
-			virtual void mouseDoubleClickEvent( QMouseEvent * event );
-			virtual void keyPressEvent( QKeyEvent * event );
-
-		signals:
-			void regionGrabbed( const QPixmap & pixmap );
-
-		private:
-			class Private;
-			Private * p_;
-		};
-
-	}
+	this->s_->postNew();
 }
 
-#endif
+void FocusGrabber::mousePressEvent( QMouseEvent * event ) {
+	if( event->button() == Qt::LeftButton ) {
+		emit this->clicked();
+	}
+}

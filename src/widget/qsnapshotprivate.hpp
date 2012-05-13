@@ -20,7 +20,9 @@
 #define QSNAPSHOT_WIDGET_QSNAPSHOT_PRIVATE_HPP
 
 #include "qsnapshot.hpp"
+#include "qsnapshotstrategy.hpp"
 #include "ui_qsnapshot.h"
+#include "focusgrabber.hpp"
 #include "snapshottimer.hpp"
 #include "regiongrabber.hpp"
 #include "windowgrabber.hpp"
@@ -36,7 +38,6 @@ namespace qsnapshot {
 			explicit Private( QSnapshot * host );
 
 			void grabRegion();
-			void performGrab();
 			void updatePreview();
 			void setPreview( const QPixmap & pixmap );
 
@@ -47,17 +48,20 @@ namespace qsnapshot {
 		public slots:
 			void onSaveAs();
 			void onCopy();
+			void onHelp();
 			void grab();
 			void onRegionGrabbed( const QPixmap & p );
 			void onWindowGrabbed( const QPixmap & p );
+			void performGrab();
 			void startGrab();
 
 		public:
 			QSnapshot * host;
 			Ui::QSnapshot ui;
-			std::shared_ptr< QWidget > grabber;
+			std::unique_ptr< QSnapshot::Strategy > strategy;
+			std::unique_ptr< FocusGrabber > grabber;
 			SnapshotTimer * grabTimer;
-			RegionGrabber * regionGrabber;
+			std::unique_ptr< RegionGrabber > regionGrabber;
 			std::shared_ptr< WindowGrabber > windowGrabber;
 			QPixmap snapshot;
 			QPoint savedPosition;
