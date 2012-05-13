@@ -16,39 +16,18 @@
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef QSNAPSHOT_WIDGET_REGIONGRABBER_HPP
-#define QSNAPSHOT_WIDGET_REGIONGRABBER_HPP
+#include "savingdialog.hpp"
 
-#include "abstractgrabber.hpp"
+#include <QtCore/QDir>
 
-namespace qsnapshot {
-	namespace widget {
-
-		class RegionGrabber : public AbstractGrabber {
-			Q_OBJECT
-		public:
-			RegionGrabber();
-
-			void grab();
-
-		protected:
-			virtual void paintEvent( QPaintEvent * event );
-			virtual void resizeEvent( QResizeEvent * event );
-			virtual void mousePressEvent( QMouseEvent * event );
-			virtual void mouseMoveEvent( QMouseEvent * event );
-			virtual void mouseReleaseEvent( QMouseEvent * event );
-			virtual void mouseDoubleClickEvent( QMouseEvent * event );
-			virtual void keyPressEvent( QKeyEvent * event );
-
-		signals:
-			void regionGrabbed( const QPixmap & pixmap );
-
-		private:
-			class Private;
-			Private * p_;
-		};
-
+QString qsnapshot::widget::guessDefaultFileName( const QString & path ) {
+	QDir d( path );
+	QString tpl( "sshot-%1.png" );
+	for( int i = 1; ; ++i ) {
+		if( !d.exists( tpl.arg( i ) ) ) {
+			tpl = tpl.arg( i );
+			break;
+		}
 	}
+	return tpl;
 }
-
-#endif
