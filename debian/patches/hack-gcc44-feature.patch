@@ -1,6 +1,6 @@
 --- a/src/widget/regiongrabber.cpp
 +++ b/src/widget/regiongrabber.cpp
-@@ -139,9 +139,9 @@
+@@ -145,9 +145,9 @@
  	this->host->hide();
  	this->host->releaseMouse();
  	this->host->releaseKeyboard();
@@ -12,4 +12,80 @@
 +	}
  	this->selection = QRect();
  }
+ 
+--- a/src/widget/focusgrabberstrategy.cpp
++++ b/src/widget/focusgrabberstrategy.cpp
+@@ -33,7 +33,7 @@
+  * If the functor is nullptr, createInstance will use default Strategy.
+  */
+ std::function< FocusGrabber::Strategy * ( FocusGrabber * ) > & FocusGrabber::Strategy::creator() {
+-	static std::function< Strategy * ( FocusGrabber * ) > f = nullptr;
++	static std::function< Strategy * ( FocusGrabber * ) > f = NULL;
+ 	return f;
+ }
+ 
+@@ -42,7 +42,7 @@
+  * @return Strategy instance
+  */
+ FocusGrabber::Strategy * FocusGrabber::Strategy::createInstance( FocusGrabber * host ) {
+-	if( Strategy::creator() == nullptr ) {
++	if( Strategy::creator() == NULL ) {
+ 		return new Strategy( host );
+ 	}
+ 	return Strategy::creator()( host );
+--- a/src/widget/qsnapshotstrategy.cpp
++++ b/src/widget/qsnapshotstrategy.cpp
+@@ -33,7 +33,7 @@
+  * If the functor is nullptr, createInstance will use default Strategy.
+  */
+ std::function< QSnapshot::Strategy * ( QSnapshot * ) > & QSnapshot::Strategy::creator() {
+-	static std::function< Strategy * ( QSnapshot * ) > f = nullptr;
++	static std::function< Strategy * ( QSnapshot * ) > f = NULL;
+ 	return f;
+ }
+ 
+@@ -42,7 +42,7 @@
+  * @return Strategy instance
+  */
+ QSnapshot::Strategy * QSnapshot::Strategy::createInstance( QSnapshot * host ) {
+-	if( Strategy::creator() == nullptr ) {
++	if( Strategy::creator() == NULL ) {
+ 		return new Strategy( host );
+ 	}
+ 	return Strategy::creator()( host );
+--- a/x11/widget/focusgrabberstrategy.cpp
++++ b/x11/widget/focusgrabberstrategy.cpp
+@@ -27,10 +27,12 @@
+ 
+ namespace {
+ 
++	FocusGrabber::Strategy * c( FocusGrabber * host ) {
++		return new FocusGrabberStrategy( host );
++	}
++
+ 	bool inject() {
+-		FocusGrabber::Strategy::creator() = []( FocusGrabber * host )->FocusGrabber::Strategy * {
+-			return new FocusGrabberStrategy( host );
+-		};
++		FocusGrabber::Strategy::creator() = c;
+ 		return true;
+ 	}
+ 
+--- a/x11/widget/qsnapshotstrategy.cpp
++++ b/x11/widget/qsnapshotstrategy.cpp
+@@ -30,10 +30,12 @@
+ 
+ namespace {
+ 
++	QSnapshot::Strategy * c( QSnapshot * host ) {
++		return new QSnapshotStrategy( host );
++	}
++
+ 	bool inject() {
+-		QSnapshot::Strategy::creator() = []( QSnapshot * host )->QSnapshot::Strategy * {
+-			return new QSnapshotStrategy( host );
+-		};
++		QSnapshot::Strategy::creator() = c;
+ 		return true;
+ 	}
  
